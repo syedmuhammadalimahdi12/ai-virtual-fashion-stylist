@@ -1,0 +1,254 @@
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  FlatList,
+} from "react-native";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import axios from "axios";
+import CONFIG from "../../ipconfig";
+
+const wardrobeIcon = require("../../assets/wardrobe.png");
+const profileIcon  = require("../../assets/profile.png");
+
+
+const ShirtScreen = () => {
+  const route = useRoute();
+  const navigation = useNavigation();
+
+  const {wardrobe_id, wardrobe_name, category_name, user } = route.params;
+
+  const [outfits, setOutfits] = useState([]);
+  const [selectedOutfit, setSelectedOutfit] = useState(null);
+
+  /* ---------------- FETCH CATEGORY OUTFITS ---------------- */
+  useEffect(() => {
+    const fetchCategoryOutfits = async () => {
+      try {
+       const res = await axios.get(
+  `      ${CONFIG.LAN}/outfit/api/outfits/wardrobe/${wardrobe_id}/category/${category_name}`
+          );     setOutfits(res.data);
+        // console.log(category_name);
+        // const res = await axios.get(`${CONFIG.LAN}/outfit/api/outfits/category/${category_name}`);
+        //  setOutfits(res.data)
+
+      } catch (err) {
+        console.log("Error fetching outfits");
+      }
+    };
+
+    fetchCategoryOutfits();
+  }, [wardrobe_id,category_name]);
+
+  useEffect(() => {
+  if (selectedOutfit) {
+    console.log("SELECTED OUTFIT OBJECT:", selectedOutfit);
+    console.log("COLOR RECEIVED ON FRONTEND:", selectedOutfit.color_name);
+  }
+}, [selectedOutfit]);
+
+
+  /* ---------------- TRY ON ---------------- */
+
+  
+  const handleTryOn = () => {
+    if (!selectedOutfit) return;
+
+    navigation.navigate("MatchSelectorScreen", {
+    selected_image: selectedOutfit.Outfit_image_url,
+    wardrobe_id,
+    wardrobe_name,
+    color_name: selectedOutfit.color_name,
+    user,
+    category_name,
+        });
+  };
+
+  return (
+    <View style={styles.container}>
+
+      {/* HEADER */}
+      <View style={styles.header}>
+       
+
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>
+            {category_name.toLowerCase()}
+          </Text>
+          <Text style={styles.headerSub}>
+            {wardrobe_name}
+          </Text>
+        </View>
+      </View>
+
+      {/* OUTFIT GRID */}
+      <FlatList
+        data={outfits}
+        numColumns={2}
+        keyExtractor={(item) => item.Outfit_id.toString()}
+        contentContainerStyle={styles.grid}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.imageBox,
+              selectedOutfit?.Outfit_id === item.Outfit_id &&
+                styles.selectedBox,
+            ]}
+            onPress={() => setSelectedOutfit(item)}
+          >
+            <Image
+              source={{ uri: item.Outfit_image_url }}
+              style={styles.image}
+            />
+
+          </TouchableOpacity>
+        )}
+      />
+
+      {/* TRY ON BUTTON */}
+      <TouchableOpacity style={styles.tryBtn} onPress={handleTryOn}>
+        <Text style={styles.tryText}>Try On</Text>
+      </TouchableOpacity>
+
+      {/* BOTTOM NAV */}
+      <View style={styles.bottomNav}>
+
+  <TouchableOpacity
+    style={styles.navItem}
+    onPress={() =>
+      navigation.navigate("WardrobeCollectionScreen", {
+        wardrobe_id,
+        wardrobe_name,
+        user,
+      })
+    }
+  >
+    <Image source={wardrobeIcon} style={styles.navIcon} />
+    <Text style={styles.navText}>Wardrobe</Text>
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.navItem}
+    onPress={() => navigation.navigate("Profile", { user })}
+  >
+    <Image source={profileIcon} style={styles.navIcon} />
+    <Text style={styles.navText}>Profile</Text>
+  </TouchableOpacity>
+
+    </View>
+
+
+    </View>
+  );
+};
+
+export default ShirtScreen;
+
+/* ---------------- STYLES ---------------- */
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+
+  header: {
+    backgroundColor: "#b00000",
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  backBtn: {
+    paddingRight: 12,
+  },
+
+  backText: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+
+  headerCenter: {
+    flex: 1,
+    alignItems: "center",
+  },
+
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+
+  headerSub: {
+    color: "#f5f5f5",
+    fontSize: 13,
+    marginTop: 2,
+  },
+
+  grid: {
+    padding: 10,
+  },
+
+  imageBox: {
+    width: "48%",
+    margin: "1%",
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+
+  selectedBox: {
+    borderColor: "#b00000",
+  },
+
+  image: {
+    width: "100%",
+    height: 180,
+    borderRadius: 10,
+  },
+
+
+  navItem: {
+  alignItems: "center",
+},
+
+navIcon: {
+  width: 26,
+  height: 26,
+  marginBottom: 4,
+},
+
+
+
+  tryBtn: {
+    backgroundColor: "#555555ff",
+    padding: 12,
+    marginHorizontal: 85,
+    marginBottom: 10,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  tryText: {
+    fontWeight: "900",
+    color: "#ffffffff",
+  },
+
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderColor: "#ccc",
+  },
+
+  navText: {
+    fontWeight: "700",
+    color: "#333",
+  },
+});
